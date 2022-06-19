@@ -25,16 +25,18 @@ const thoughtController = {
             })
     },
 
-    createThought({ params, body }, res) {
+    createThought({ body }, res) {
+        console.log(body, 'body')
         Thought.create(body)
             .then(({ _id }) => {
                 return User.findOneAndUpdate(
-                    { _id: params.userId },
-                    { $push: { thougths: _id } },
+                    { _id: body.userId },
+                    { $push: { thoughts: _id } },
                     { new: true }
                 )
             })
             .then(thoughtData => {
+                console.log(thoughtData, 'thoughtdata')
                 if (!thoughtData) {
                     res.status(400).json({ message: 'No Thought with this id!' })
                     return;
@@ -76,6 +78,33 @@ const thoughtController = {
                 res.status(500).json(err)
             })
     },
+
+    createReaction({ params, body }, res) {
+        console.log(body)
+        Thought.findOneAndUpdate(
+            { _id: params.thoughtId },
+            { $push: { reactions: body } },
+            { new: true, runValidators: true }
+        )
+            .then(thoughtData => {
+                if (!thoughtData) {
+                    res.status(404).json({ message: "No Comment found with this id!" })
+                    return;
+                }
+                res.json(thoughtData)
+            })
+            .catch(err => res.json(err));
+    },
+
+    deleteReaction({ params }, res) {
+        Thought.findOneAndUpdate(
+            { _id: params.thoughtId },
+            { $pull: { reactions: { reactionId: params.reactionId } } },
+            { new: true, runValidators: true }
+        )
+            .then(thoughtData => res.json(thoughtData))
+            .catch(err => res.json(err))
+    }
 }
 
 module.exports = thoughtController;
